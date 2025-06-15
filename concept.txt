@@ -1,0 +1,81 @@
+    Audio Transcription & Timestamping:
+
+        Service: Use the OpenAI Whisper API.
+
+        Requirement: The API call must request word-level timestamps. The output should be a structured data format (like JSON) containing each word and its precise start and end time. This is critical for all subsequent steps.
+
+    Content Segmentation:
+
+        Process the timestamped transcript.
+
+        Group the words into logical segments, aiming for a duration of 5-8 seconds each. A segment is defined by its text content and its start/end time.
+
+    Image Prompt Generation:
+
+        Iterate through each text segment.
+
+        For each segment, make an API call to a Large Language Model (e.g., Gemini or GPT-4).
+
+        LLM Prompt Template: "Analyze the following text from a video script. Generate a single, concise, visually descriptive image generation prompt that captures the main subject, action, or mood. The prompt should be photorealistic and suitable for a text-to-image AI like Stockimg.ai. Text: '[Insert text segment here]'"
+
+        Store the generated image prompt, associating it with its corresponding segment's start and end time.
+
+    Image Generation:
+
+        Service: Use the stockimg.ai API.
+
+        Endpoint (for MVP): POST /v1/text-to-image/stock-image/stockimg
+
+        For each generated image prompt, make a call to this endpoint.
+
+        The image_size parameter must be set dynamically based on the user's format selection (e.g., {"width": 1920, "height": 1080} for YouTube, {"width": 1080, "height": 1920} for TikTok).
+
+        Download and temporarily store the resulting image file.
+
+    Video Scene Assembly:
+
+        Tool: Use a server-side video processing library like FFmpeg (preferred for robustness) or a Python wrapper like MoviePy.
+
+        For each generated image and its corresponding time segment:
+
+            Create a video clip with a duration matching the segment's length (e.g., endTime - startTime).
+
+            Animate the static image with a Ken Burns effect (a slow, continuous zoom and/or pan) to make it dynamic. The pan/zoom should last the entire duration of the clip.
+
+    Final Compilation:
+
+        Concatenate all the individual animated image clips into a single, silent video track in chronological order.
+
+        Take the original, unmodified user audio file and overlay it onto this silent video track. The audio should be perfectly synchronized with the video scenes.
+
+        Render and export the final video as a single .mp4 file.
+
+4. Technical Stack & API Requirements
+
+    Backend: Node.js (Express) or Python (Flask/Django).
+
+    Frontend: A modern JavaScript framework (React, Vue, or Svelte).
+
+    APIs:
+
+        OpenAI Whisper API: For transcription with word-level timestamps.
+
+        Google Gemini API / OpenAI GPT API: For generating image prompts.
+
+        Stockimg.ai API: For image generation.
+
+        UPDATE - use GROQ DISTIL WHISPER and NOT 
+
+    Video Processing: Command-line access to FFmpeg is required on the server.
+
+    Storage: A temporary file storage solution for handling uploaded audio and generated images/videos (e.g., local server storage for MVP, cloud storage like AWS S3 for scalability).
+
+5. Future Features (Out of Scope for MVP)
+
+These features are part of the long-term vision but should not be included in the initial build.
+
+    Filler Word Removal: A post-processing step that uses the Whisper transcript to identify and cut segments containing "umm," "ahh," etc., from both the audio and video tracks.
+
+    Auto-Captions: Using the word-level timestamps to generate and overlay animated, TikTok-style text captions onto the final video.
+
+    Advanced Image Editing: An interface allowing users to see the LLM-generated prompts, edit them, and regenerate individual images using the more advanced Flux model from stockimg.ai
