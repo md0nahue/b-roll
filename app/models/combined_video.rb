@@ -1,0 +1,2 @@
+class CombinedVideo < ApplicationRecord
+end

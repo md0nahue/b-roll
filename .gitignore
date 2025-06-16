@@ -1,0 +1,68 @@
+# Ignore all files in tmp/
+/tmp/*
+!/tmp/.keep
+!/tmp/.gitkeep
+
+# Ignore all logfiles and tempfiles for deals/upgrades
+/log/*
+/tmp/*
+!/log/.keep
+!/tmp/.keep
+
+# Ignore pidfiles, but keep the directory
+/tmp/pids/*
+!/tmp/pids/
+!/tmp/pids/.keep
+
+# Ignore uploaded files in development
+/storage/*
+!/storage/.keep
+/tmp/storage/*
+!/tmp/storage/
+!/tmp/storage/.keep
+
+# Ignore master key for decrypting credentials
+/config/master.key
+
+# Ignore environment files
+.env
+.env.*
+
+# Ignore database files
+*.sqlite3
+*.sqlite3-*
+*.sqlite3-journal
+
+# Ignore all files in public/assets
+/public/assets
+.byebug_history
+
+# Ignore Mac and Linux file system files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Ignore RubyMine files
+.idea/
+*.swp
+*.swo
+
+# Ignore node modules and yarn files
+/node_modules
+/yarn-error.log
+yarn-debug.log*
+.yarn-integrity
+
+# Ignore coverage directory
+/coverage/
+
+# Ignore Spring files
+/spring/*.pid
+
+# Ignore test coverage
+/coverage/
+/spec/tmp/ 

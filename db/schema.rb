@@ -28,4 +28,12 @@ ActiveRecord::Schema[7.1].define(version: 2025_06_16_030923) do
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
 
+  create_table "combined_videos", force: :cascade do |t|
+    t.string "s3_url"
+    t.string "status"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.text "error_message"
+  end
+
 end
