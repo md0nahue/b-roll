@@ -1,0 +1,17 @@
+<% provide(:title, "Home") %>
+<h1>Welcome to B-Roll AI</h1>
+<p>This is a placeholder home page.</p>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+
+<% if user_signed_in? %>
+  <p>You are signed in as: <%= current_user.email %></p>
+  <%= button_to "Sign out", destroy_user_session_path, method: :delete %>
+<% else %>
+  <p>You are not signed in.</p>
+  <%= link_to "Sign up", new_user_registration_path %> |
+  <%= link_to "Sign in", new_user_session_path %>
+  <br>
+  <%= link_to "Sign in with Google", user_google_oauth2_omniauth_authorize_path %>
+  <br>
+  <%= link_to "Sign in with GitHub", user_github_omniauth_authorize_path %>
+<% end %>
