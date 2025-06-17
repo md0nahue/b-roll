@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/rails # Mount application code
+      - bundle_cache:/usr/local/bundle # Persist bundle installation
+      # If yarn is used for JavaScript packages and node_modules should be persisted/mounted:
+      # - node_modules:/rails/node_modules
+    environment:
+      RAILS_ENV: development
+      DATABASE_HOST: db
+      POSTGRES_DB: jules_dev_db
+      POSTGRES_USER: jules_user # Replace with your desired username
+      POSTGRES_PASSWORD: jules_password # Replace with your desired password
+      # For Active Storage with S3 (provide actual or dummy values for development)
+      # AWS_ACCESS_KEY_ID: your_access_key_id
+      # AWS_SECRET_ACCESS_KEY: your_secret_access_key
+      # AWS_REGION: your_aws_region
+      # AWS_S3_BUCKET: your_s3_bucket_name
+      # For OmniAuth Google
+      # GOOGLE_CLIENT_ID: your_google_client_id
+      # GOOGLE_CLIENT_SECRET: your_google_client_secret
+      # For OmniAuth GitHub
+      # GITHUB_CLIENT_ID: your_github_client_id
+      # GITHUB_CLIENT_SECRET: your_github_client_secret
+      # It's good practice to use .env file for these, but for simplicity in docker-compose:
+      # Note: For real secrets, use Docker secrets or .env file not checked into VCS.
+      # Example for .env file usage (requires .env file at project root):
+      # env_file:
+      #  - .env
+    depends_on:
+      - db
+    stdin_open: true # Allows attaching to `byebug` or `debug`
+    tty: true        # Allows attaching to `byebug` or `debug`
+
+  db:
+    image: postgres:14-alpine # Or a newer stable version
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: jules_dev_db # Must match app's POSTGRES_DB
+      POSTGRES_USER: jules_user # Must match app's POSTGRES_USER
+      POSTGRES_PASSWORD: jules_password # Must match app's POSTGRES_PASSWORD
+    ports:
+      - "5432:5432" # Optional: expose pg port to host for external tools
+
+volumes:
+  postgres_data:
+  bundle_cache: # To cache installed gems
+  # node_modules: # If you are mounting node_modules for persistence

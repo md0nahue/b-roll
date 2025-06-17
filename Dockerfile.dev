@@ -1,0 +1,51 @@
+# Use the Ruby version specified in the Gemfile
+ARG RUBY_VERSION=3.2.3
+FROM registry.docker.com/library/ruby:$RUBY_VERSION-slim
+
+# Set development environment
+ENV RAILS_ENV="development" \
+    BUNDLE_WITHOUT="" \
+    BUNDLE_PATH="/usr/local/bundle" \
+    GEM_HOME="/usr/local/bundle" \
+    BUNDLE_JOBS="$(nproc)" \
+    PATH="/usr/local/bundle/bin:$PATH"
+
+# Install essential build tools and application dependencies
+RUN apt-get update -qq && \
+    apt-get install --no-install-recommends -y \
+    build-essential \
+    git \
+    postgresql-client \
+    libvips \
+    ffmpeg \
+    imagemagick \
+    nodejs \
+    yarn \
+    # Cleanup apt caches to reduce image size
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+
+# Set the working directory for the application
+WORKDIR /rails
+
+# Copy Gemfile and Gemfile.lock to leverage Docker cache
+COPY Gemfile Gemfile.lock ./
+
+# Install gems
+# Using BUNDLE_PATH="" ensures gems are installed to the default system location,
+# which is fine for a development container.
+RUN bundle install
+
+# Copy the rest of the application code
+COPY . .
+
+# Use the existing entrypoint script
+# Ensure it's executable
+COPY bin/docker-entrypoint /usr/local/bin/docker-entrypoint
+RUN chmod +x /usr/local/bin/docker-entrypoint
+ENTRYPOINT ["docker-entrypoint"]
+
+# Expose the Rails server port
+EXPOSE 3000
+
+# Default command to start the Rails server, binding to all interfaces
+CMD ["./bin/rails", "server", "-b", "0.0.0.0"]
