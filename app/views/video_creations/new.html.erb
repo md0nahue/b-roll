@@ -1,0 +1,30 @@
+<h1>Upload New Video</h1>
+
+<%= form_with(model: @video_creation, local: true) do |form| %>
+  <% if @video_creation.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(@video_creation.errors.count, "error") %> prohibited this video_creation from being saved:</h2>
+      <ul>
+        <% @video_creation.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="field">
+    <%= form.label :title %>
+    <%= form.text_field :title %>
+  </div>
+
+  <div class="field">
+    <%= form.label :file %>
+    <%= form.file_field :file %>
+  </div>
+
+  <div class="actions">
+    <%= form.submit "Upload Video" %>
+  </div>
+<% end %>
+
+<%= link_to 'Back', root_path %>
