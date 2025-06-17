@@ -1,0 +1,2 @@
+module VideoCreationsHelper
+end
