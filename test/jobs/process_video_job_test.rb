@@ -1,4 +1,5 @@
 require "test_helper"
+require 'minitest/mock'
 require 'aws-sdk-s3' # Required for stubbing
 require 'streamio-ffmpeg' # Required for stubbing
 
@@ -11,7 +12,7 @@ class ProcessVideoJobTest < ActiveJob::TestCase
 
     # Mock S3 Client
     @mock_s3_client = Minitest::Mock.new
-    Aws::S3::Client.stubs(:new).returns(@mock_s3_client)
+    # Aws::S3::Client.stubs(:new).returns(@mock_s3_client) # This will be replaced with Minitest.stub in each test
 
     # Mock FileUtils
     FileUtils.stubs(:mkdir_p)
@@ -64,8 +65,10 @@ class ProcessVideoJobTest < ActiveJob::TestCase
     # Mock S3 upload
     @mock_s3_client.expect(:put_object, nil, [Hash]) # Allow any hash for params for simplicity
 
-    perform_enqueued_jobs do
-      ProcessVideoJob.perform_later(@combined_video.id, @video_urls, nil)
+    Aws::S3::Client.stub(:new, @mock_s3_client) do
+      perform_enqueued_jobs do
+        ProcessVideoJob.perform_later(@combined_video.id, @video_urls, nil)
+      end
     end
 
     @combined_video.reload
@@ -93,8 +96,10 @@ class ProcessVideoJobTest < ActiveJob::TestCase
 
     @mock_s3_client.expect(:put_object, nil, [Hash])
 
-    perform_enqueued_jobs do
-      ProcessVideoJob.perform_later(@combined_video.id, @video_urls, @audio_url)
+    Aws::S3::Client.stub(:new, @mock_s3_client) do
+      perform_enqueued_jobs do
+        ProcessVideoJob.perform_later(@combined_video.id, @video_urls, @audio_url)
+      end
     end
 
     @combined_video.reload
@@ -109,9 +114,11 @@ class ProcessVideoJobTest < ActiveJob::TestCase
   test "job fails on S3 download error" do
     @mock_s3_client.expect(:get_object, nil, [Hash]) { raise Aws::S3::Errors::NoSuchKey.new("params", "message") }
 
-    perform_enqueued_jobs do
-      assert_raises(Aws::S3::Errors::NoSuchKey) do
-        ProcessVideoJob.perform_later(@combined_video.id, @video_urls, nil)
+    Aws::S3::Client.stub(:new, @mock_s3_client) do
+      perform_enqueued_jobs do
+        assert_raises(Aws::S3::Errors::NoSuchKey) do
+          ProcessVideoJob.perform_later(@combined_video.id, @video_urls, nil)
+        end
       end
     end
 
@@ -131,9 +138,11 @@ class ProcessVideoJobTest < ActiveJob::TestCase
     ProcessVideoJob.any_instance.stubs(:`).with(includes("ffmpeg -f concat")).returns("ffmpeg error output")
     ProcessVideoJob.any_instance.stubs(:$?).returns(stub(success?: false)) # Simulate failure
 
-    perform_enqueued_jobs do
-      assert_raises(RuntimeError) do # Job re-raises the error
-        ProcessVideoJob.perform_later(@combined_video.id, @video_urls, nil)
+    Aws::S3::Client.stub(:new, @mock_s3_client) do
+      perform_enqueued_jobs do
+        assert_raises(RuntimeError) do # Job re-raises the error
+          ProcessVideoJob.perform_later(@combined_video.id, @video_urls, nil)
+        end
       end
     end
 
@@ -155,9 +164,11 @@ class ProcessVideoJobTest < ActiveJob::TestCase
     # Mock FFMPEG::Movie#transcode to raise an error
     @mock_ffmpeg_movie.expects(:transcode).raises(FFMPEG::Error, "ffmpeg transcode failed")
 
-    perform_enqueued_jobs do
-      assert_raises(FFMPEG::Error) do
-        ProcessVideoJob.perform_later(@combined_video.id, single_video_url, @audio_url)
+    Aws::S3::Client.stub(:new, @mock_s3_client) do
+      perform_enqueued_jobs do
+        assert_raises(FFMPEG::Error) do
+          ProcessVideoJob.perform_later(@combined_video.id, single_video_url, @audio_url)
+        end
       end
     end
 
@@ -180,9 +191,11 @@ class ProcessVideoJobTest < ActiveJob::TestCase
     # Mock S3 upload to fail
     @mock_s3_client.expect(:put_object, nil, [Hash]) { raise Aws::S3::Errors::AccessDenied.new("params", "message") }
 
-    perform_enqueued_jobs do
-      assert_raises(Aws::S3::Errors::AccessDenied) do
-        ProcessVideoJob.perform_later(@combined_video.id, @video_urls, nil)
+    Aws::S3::Client.stub(:new, @mock_s3_client) do
+      perform_enqueued_jobs do
+        assert_raises(Aws::S3::Errors::AccessDenied) do
+          ProcessVideoJob.perform_later(@combined_video.id, @video_urls, nil)
+        end
       end
     end
 
@@ -203,8 +216,10 @@ class ProcessVideoJobTest < ActiveJob::TestCase
 
     @mock_s3_client.expect(:put_object, nil, [Hash])
 
-    perform_enqueued_jobs do
-      ProcessVideoJob.perform_later(@combined_video.id, single_video_url_array, nil)
+    Aws::S3::Client.stub(:new, @mock_s3_client) do
+      perform_enqueued_jobs do
+        ProcessVideoJob.perform_later(@combined_video.id, single_video_url_array, nil)
+      end
     end
 
     @combined_video.reload
