@@ -158,22 +158,54 @@ class ProcessVideoJob < ApplicationJob
 
   def parse_s3_url(url_str)
     uri = URI.parse(url_str)
-    if uri.scheme == 's3'
-      return [uri.host, uri.path.gsub(%r{^/}, '')]
-    elsif uri.scheme == 'https' && uri.host.include?('s3') && uri.host.include?('amazonaws.com')
-      parts = uri.host.split('.')
-      path_parts = uri.path.split('/').reject(&:empty?) # Remove empty parts from path
+    key = uri.path.gsub(%r{^/}, '') # Key is usually the path, minus leading slash
 
-      if parts.first != 's3' && parts[1] == 's3' # my-bucket.s3...
-        bucket = parts.first
-        key = path_parts.join('/')
-        return [bucket, key]
-      elsif parts.first == 's3' # s3.region...
-        bucket = path_parts.shift
-        key = path_parts.join('/')
-        return [bucket, key]
+    if uri.scheme == 's3'
+      return [nil, nil] if uri.host.blank? # Invalid if host (bucket) is missing for s3 scheme
+      return [uri.host, key]
+    elsif uri.scheme == 'https' && uri.host.end_with?('amazonaws.com')
+      host_parts = uri.host.split('.')
+
+      # Case 1: bucket.s3.region.amazonaws.com OR bucket.s3-region.amazonaws.com
+      # e.g. my-bucket.s3.us-east-1.amazonaws.com or my-bucket.s3-us-east-1.amazonaws.com
+      # or my-bucket.s3.amazonaws.com (older global virtual hosted)
+      if host_parts.length > 3 && host_parts[1..-1].join('.').start_with?('s3')
+        # Bucket is the first part of the hostname (e.g., "my-bucket" from "my-bucket.s3...")
+        # This also handles bucket names with dots like "my.cool.bucket"
+        # by finding the ".s3" part and taking everything before it.
+        s3_domain_index = host_parts.find_index { |part| part.match?(/^s3(?:[-.][a-zA-Z0-9-]+)?$/) || part == "s3" }
+
+        if s3_domain_index && s3_domain_index > 0
+          bucket = host_parts[0...s3_domain_index].join('.')
+          # Key is already derived from uri.path
+          return [bucket, key]
+        end
+      end
+
+      # Case 2: s3.region.amazonaws.com/bucket/key OR s3-region.amazonaws.com/bucket/key
+      # e.g. s3.us-east-1.amazonaws.com/my-bucket/path/to/file
+      # OR s3.amazonaws.com/my-bucket/path/to/file (older global path-style)
+      # The bucket is the first component of the path.
+      if host_parts.first == 's3' || host_parts.first.match?(/^s3(?:[-.][a-zA-Z0-9]+)?$/)
+        path_segments = key.split('/', 2) # Split only on the first slash
+        if path_segments.length > 1
+          bucket = path_segments.first
+          actual_key = path_segments.last
+          return [bucket, actual_key]
+        elsif path_segments.length == 1
+          # This could be a bucket name if the key is empty (e.g. accessing bucket root)
+          # Or if the path is just the bucket name (no key)
+          # For simplicity, if there's only one part, and it's for file processing, this is likely ambiguous
+          # or an incomplete path for a file.
+          # However, if the job expects to list bucket contents, this might be valid.
+          # For now, assume we need a key after the bucket.
+          # If path_segments.first is the bucket, and no key, what to do?
+          # The original code didn't handle this well either.
+          # Let's assume for file processing, a key must exist after the bucket in path-style.
+          return [nil, nil] # Or return [path_segments.first, ''] if that's valid
+        end
       end
     end
-    [nil, nil]
+    [nil, nil] # Default if no format matches
   end
 end
