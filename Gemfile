@@ -45,6 +45,7 @@ gem "bootsnap", require: false
 # gem "image_processing", "~> 1.2"
 gem "aws-sdk-s3"
 gem "streamio-ffmpeg"
+gem "httparty"
 
 gem "devise"
 gem "omniauth"
